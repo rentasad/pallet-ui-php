@@ -1,55 +1,73 @@
-<?php
-declare(strict_types=1);
-require_once __DIR__ . '/db.php';
-require_once __DIR__ . '/helpers.php';
+<?php require __DIR__ . '/partials/header.php'; ?>
+<h3 class="mb-3">Scannen / Buchen</h3>
 
-$terminal   = input('terminal', '101');
-$standort   = input('standort', '');
-$bearbeiter = input('bearbeiter1', '');
-$einheit    = input('einheit', 'Palette');
-$vorgang    = input('vorgang', 'Einlagerung');
-$barcode    = input('barcode', '');
-$lagerplatz = input('lagerplatz', '');
+<form method="post" action="/scan" class="form-section">
+    <!-- Terminal -->
+    <div class="row mb-3">
+        <label for="terminal" class="col-sm-4 col-form-label">Terminal</label>
+        <div class="col-sm-8">
+            <input id="terminal" name="terminal" class="form-control" value="101">
+        </div>
+    </div>
 
-if (!$barcode) {
-  http_response_code(422);
-  echo "<p>Barcode fehlt.</p><p><a href='/scan'>Zurück</a></p>";
-  exit;
-}
+    <!-- Standort -->
+    <div class="row mb-3">
+        <label for="standort" class="col-sm-4 col-form-label">Standort</label>
+        <div class="col-sm-8">
+            <input id="standort" name="standort" class="form-control" value="Priebs Logistik">
+        </div>
+    </div>
 
-$now = (new DateTime('now', new DateTimeZone('Europe/Berlin')));
-$serverDT = $now->format('Y-m-d H:i:s'); // BUCHUNGDATUMZEITZIELSERVER
-$exportFlag = '    '; // vier Spaces statt 'NEIN'
+    <!-- Mitarbeiter -->
+    <div class="row mb-3">
+        <label for="bearbeiter1" class="col-sm-4 col-form-label">Mitarbeiter</label>
+        <div class="col-sm-8">
+            <input id="bearbeiter1" name="bearbeiter1" class="form-control">
+        </div>
+    </div>
 
-$sql = "
-INSERT INTO dbo.BEWEGUNG
-(TERMINAL, BUCHUNGDATUMZEITZIELSERVER, BUCHUNGSQUELLE, BARCODE, EINHEIT, VORGANG,
- BUCHUNGDATUMZEITVORGANG, STANDORT, LAGERPLATZ, BEARBEITER1, EXPORTFLAG)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-";
+    <!-- Einheit -->
+    <div class="row mb-3">
+        <label for="einheit" class="col-sm-4 col-form-label">Einheit</label>
+        <div class="col-sm-8">
+            <input id="einheit" name="einheit" class="form-control" value="Palette">
+        </div>
+    </div>
 
-$params = [
-  $terminal,
-  $serverDT,
-  'WEBUI', // BUCHUNGSQUELLE
-  $barcode,
-  $einheit,
-  $vorgang,
-  $serverDT, // treat scan time as vorgang time
-  $standort,
-  $lagerplatz,
-  $bearbeiter,
-  $exportFlag,
-];
+    <!-- Vorgang -->
+    <div class="row mb-3">
+        <label for="vorgang" class="col-sm-4 col-form-label">Vorgang</label>
+        <div class="col-sm-8">
+            <select id="vorgang" name="vorgang" class="form-select">
+                <option>Einlagerung</option>
+                <option>Auslagerung</option>
+                <option>Umlagerung</option>
+            </select>
+        </div>
+    </div>
 
-try {
-  $pdo = db();
-  $stmt = $pdo->prepare($sql);
-  $stmt->execute($params);
-} catch (Throwable $e) {
-  http_response_code(500);
-  echo "<h1>Fehler bei der Buchung</h1><pre>" . h($e->getMessage()) . "</pre><p><a href='/scan'>Zurück</a></p>";
-  exit;
-}
+    <!-- Barcode (prominent) -->
+    <div class="row mb-3">
+        <label for="barcode" class="col-sm-4 col-form-label">Scancode</label>
+        <div class="col-sm-8">
+            <input id="barcode" name="barcode" class="form-control" required autofocus>
+        </div>
+    </div>
 
-redirect('/list?barcode=' . urlencode($barcode) . '&limit=20');
+    <!-- Lagerplatz -->
+    <div class="row mb-4">
+        <label for="lagerplatz" class="col-sm-4 col-form-label">Lagerplatz</label>
+        <div class="col-sm-8">
+            <input id="lagerplatz" name="lagerplatz" class="form-control">
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="row">
+        <div class="col-sm-8 offset-sm-4 d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Buchen</button>
+            <a class="btn btn-outline-secondary" href="/">Zurück</a>
+        </div>
+    </div>
+</form>
+<?php require __DIR__ . '/partials/footer.php'; ?>

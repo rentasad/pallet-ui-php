@@ -22,89 +22,94 @@ $limit = max(1, min($limit, 100000));
 
 $sql = "
 SELECT TOP {$limit}
-  IDNR, TERMINAL,
+  IDNR, RTRIM(TERMINAL) AS TERMINAL,
   BUCHUNGDATUMZEITZIELSERVER,
-  BUCHUNGSQUELLE,
-  RTRIM(BARCODE)   AS BARCODE,
-  RTRIM(EINHEIT)   AS EINHEIT,
-  RTRIM(VORGANG)   AS VORGANG,
+  RTRIM(BUCHUNGSQUELLE)  AS BUCHUNGSQUELLE,
+  RTRIM(BARCODE)         AS BARCODE,
+  RTRIM(EINHEIT)         AS EINHEIT,
+  RTRIM(VORGANG)         AS VORGANG,
   BUCHUNGDATUMZEITVORGANG,
-  RTRIM(STANDORT)  AS STANDORT,
-  RTRIM(LAGERPLATZ) AS LAGERPLATZ,
-  RTRIM(BEARBEITER1) AS BEARBEITER1
+  RTRIM(STANDORT)        AS STANDORT,
+  RTRIM(LAGERPLATZ)      AS LAGERPLATZ,
+  RTRIM(BEARBEITER1)     AS BEARBEITER1
 FROM dbo.BEWEGUNG
 {$where}
 ORDER BY BUCHUNGDATUMZEITZIELSERVER DESC, IDNR DESC;
 ";
 
 try {
-  $pdo = db();
-  $stmt = $pdo->prepare($sql);
-  $stmt->execute($params);
-  $rows = $stmt->fetchAll();
+    $pdo = db();
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $rows = $stmt->fetchAll();
 } catch (Throwable $e) {
-  http_response_code(500);
-  echo "<h1>Fehler bei der Abfrage</h1><pre>" . h($e->getMessage()) . "</pre><p><a href='/'>Zurück</a></p>";
-  exit;
+    http_response_code(500);
+    require __DIR__ . '/views/partials/header.php';
+    echo "<div class='alert alert-danger'><strong>Fehler bei der Abfrage:</strong><br><pre class='mb-0'>" . h($e->getMessage()) . "</pre></div>";
+    echo "<a class='btn btn-secondary mt-3' href='/'>Zurück</a>";
+    require __DIR__ . '/views/partials/footer.php';
+    exit;
 }
 
-?><!doctype html>
-<html lang="de">
-<head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Buchungsliste</title>
-  <style>
-    body{font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:0;background:#0b1020;color:#e6eaf2}
-    .wrap{max-width:1100px;margin:0 auto;padding:24px}
-    table{width:100%;border-collapse:collapse;margin-top:12px}
-    th,td{padding:8px;border-bottom:1px solid #233257;text-align:left;font-size:14px}
-    .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-    input{padding:8px;border-radius:10px;border:1px solid #2a3a63;background:#0c142b;color:#e6eaf2}
-    a.btn, button{padding:10px 14px;border-radius:12px;border:0;background:#1c2b4a;color:#fff;text-decoration:none}
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <h1>Buchungsliste</h1>
-    <form class="filters" method="get" action="/list">
-      <input name="standort" placeholder="Standort" value="<?=h($standort)?>">
-      <input type="date" name="von" value="<?=h($von)?>">
-      <input type="date" name="bis" value="<?=h($bis)?>">
-      <input type="number" name="limit" value="<?=h((string)$limit)?>" min="1" max="100000">
-      <input name="barcode" placeholder="Barcode" value="<?=h($barcode)?>">
-      <button>Filtern</button>
-      <a class="btn" href="/">Zurück</a>
-    </form>
+require __DIR__ . '/views/partials/header.php';
+?>
+<h3 class="mb-3">Buchungsliste</h3>
+<form class="form-section row gy-2" method="get" action="/list">
+    <div class="col-md-3">
+        <label class="form-label">Standort</label>
+        <input class="form-control" name="standort" placeholder="Standort" value="<?=h($standort)?>">
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Von</label>
+        <input class="form-control" type="date" name="von" value="<?=h($von)?>">
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Bis</label>
+        <input class="form-control" type="date" name="bis" value="<?=h($bis)?>">
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Max. Datensätze</label>
+        <input class="form-control" type="number" name="limit" value="<?=h((string)$limit)?>" min="1" max="100000">
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Barcode</label>
+        <input class="form-control" name="barcode" placeholder="Barcode" value="<?=h($barcode)?>">
+    </div>
+    <div class="col-md-1 d-flex align-items-end">
+        <button class="btn btn-primary w-100">Filtern</button>
+    </div>
+</form>
 
-    <table>
-      <thead>
+<div class="table-responsive mt-3">
+    <table class="table table-sm table-striped align-middle">
+        <thead class="table-light">
         <tr>
-          <th>Zeit (Server)</th>
-          <th>Vorgang</th>
-          <th>Barcode</th>
-          <th>Einheit</th>
-          <th>Standort</th>
-          <th>Lagerplatz</th>
-          <th>Mitarbeiter</th>
-          <th>Terminal</th>
+            <th>Zeit (Server)</th>
+            <th>Vorgang</th>
+            <th>Barcode</th>
+            <th>Einheit</th>
+            <th>Standort</th>
+            <th>Lagerplatz</th>
+            <th>Mitarbeiter</th>
+            <th>Terminal</th>
         </tr>
-      </thead>
-      <tbody>
+        </thead>
+        <tbody>
         <?php foreach ($rows as $r): ?>
-          <tr>
-            <td><?=h($r['BUCHUNGDATUMZEITZIELSERVER'])?></td>
-            <td><?=h($r['VORGANG'])?></td>
-            <td><?=h($r['BARCODE'])?></td>
-            <td><?=h($r['EINHEIT'])?></td>
-            <td><?=h($r['STANDORT'])?></td>
-            <td><?=h($r['LAGERPLATZ'])?></td>
-            <td><?=h($r['BEARBEITER1'])?></td>
-            <td><?=h($r['TERMINAL'])?></td>
-          </tr>
+            <tr>
+                <td><?=h($r['BUCHUNGDATUMZEITZIELSERVER'])?></td>
+                <td><?=h($r['VORGANG'])?></td>
+                <td><?=h($r['BARCODE'])?></td>
+                <td><?=h($r['EINHEIT'])?></td>
+                <td><?=h($r['STANDORT'])?></td>
+                <td><?=h($r['LAGERPLATZ'])?></td>
+                <td><?=h($r['BEARBEITER1'])?></td>
+                <td><?=h($r['TERMINAL'])?></td>
+            </tr>
         <?php endforeach; ?>
-      </tbody>
+        </tbody>
     </table>
-    <?php if (!$rows): ?><p>Keine Datensätze gefunden.</p><?php endif; ?>
-  </div>
-</body>
-</html>
+    <?php if (!$rows): ?><p class="text-muted">Keine Datensätze gefunden.</p><?php endif; ?>
+</div>
+<a class="btn btn-outline-secondary" href="/">Zurück</a>
+<?php require __DIR__ . '/views/partials/footer.php'; ?>
