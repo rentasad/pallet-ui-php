@@ -1,0 +1,45 @@
+services:
+  app:
+    build: .
+    container_name: pallet-ui-php
+    ports:
+      - "8080:80"
+    environment:
+      APP_ENV: "prod"
+      TZ: "Europe/Berlin"
+      DB_HOST: "mssql"
+      DB_PORT: "${DB_PORT:-1433}"
+      DB_DATABASE: "Priebslogistik"
+      DB_USERNAME: "${DB_USERNAME}"
+      DB_PASSWORD: "${DB_PASSWORD}"
+    volumes:
+      - ./src:/var/www/html
+      - ./public:/var/www/public
+    depends_on:
+      - mssql
+#        condition: service_healthy
+    networks:
+      - appnet
+
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    user: "0:0"                 # <— nur einmalig zum Initialisieren!
+    container_name: mssql
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "${SA_PASSWORD:-YourStrong!Passw0rd}"
+      MSSQL_PID: "Express"
+      TZ: "Europe/Berlin"
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql-data:/var/opt/mssql   # <— persistente Daten hier
+    networks:
+      - appnet
+
+networks:
+  appnet:
+    driver: bridge
+
+volumes: 
+  mssql-data:
